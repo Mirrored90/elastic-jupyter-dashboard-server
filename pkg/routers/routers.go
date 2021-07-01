@@ -11,5 +11,5 @@ func RegisterRoutes(router *gin.Engine) {
 
 	router.GET("/notebooks", controllers.GetNotebooks)
 	router.DELETE("/notebooks", controllers.DeleteNotebook)
-	router.POST("/notebooks/create", controllers.CreateNotebook)
+	router.POST("/notebooks", controllers.CreateNotebook)
 }

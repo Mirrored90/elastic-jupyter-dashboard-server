@@ -16,8 +16,8 @@ import (
 var cl client.Client = driver.MyK8S
 
 type Notebook struct {
-	Name             string   `json:"name"`
-	Namespace        string   `json:"namespace"`
+	Name             string   `json:"name" binding:"required"`
+	Namespace        string   `json:"namespace" binding:"required"`
 	PodName          string   `json:"podName"`
 	NodeName         string   `json:"node"`
 	Label            []string `json:"label"`
@@ -124,16 +124,35 @@ func (model *Notebook) formatNotebook() (*kubeflowtkestackiov1alpha1.JupyterNote
 		return &kubeflowtkestackiov1alpha1.JupyterNotebook{}, errors.New("both gateway and container are empty")
 	}
 
+	gatewayReference := corev1.ObjectReference{}
+	// template := corev1.PodTemplateSpec{}
+
+	if model.GatewayName != "" {
+		gateway := &kubeflowtkestackiov1alpha1.JupyterGateway{}
+
+		if err := cl.Get(context.Background(), client.ObjectKey{
+			Namespace: model.GatewayNamespace,
+			Name:      model.GatewayName,
+		}, gateway); err != nil {
+			return &kubeflowtkestackiov1alpha1.JupyterNotebook{}, errors.New(err.Error())
+		} else {
+			gatewayReference = corev1.ObjectReference{
+				Name:      model.GatewayName,
+				Namespace: model.GatewayNamespace,
+			}
+		}
+	}
+
+	// TODO: fill template if container not empty
+
 	notebook := &kubeflowtkestackiov1alpha1.JupyterNotebook{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      model.Name,
 			Namespace: model.Namespace,
 		},
 		Spec: kubeflowtkestackiov1alpha1.JupyterNotebookSpec{
-			Gateway: &corev1.ObjectReference{
-				Name:      model.GatewayName,
-				Namespace: model.GatewayNamespace,
-			},
+			Gateway: &gatewayReference,
+			// Template: &template,
 		},
 	}
 	return notebook, nil

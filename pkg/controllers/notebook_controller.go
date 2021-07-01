@@ -1,13 +1,12 @@
 package controllers
 
 import (
-	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/elastic-jupyter-dashboard-server/pkg/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 func GetNotebooks(ctx *gin.Context) {
@@ -45,21 +44,19 @@ func DeleteNotebook(ctx *gin.Context) {
 }
 
 func CreateNotebook(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
+	notebookModel := models.Notebook{}
+	var err error
+	if err = ctx.ShouldBindWith(&notebookModel, binding.JSON); err == nil {
+		if err = notebookModel.CreateNotebook(); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"msg": err.Error(),
+			})
+		} else {
+			ctx.Status(http.StatusCreated)
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"msg": err.Error(),
 		})
-	}
-	log.Println(jsonData)
-
-	notebookModel := models.Notebook{}
-
-	if err := ctx.ShouldBind(&notebookModel); err == nil {
-		log.Println(notebookModel.Name)
-		log.Println(notebookModel.Namespace)
-		log.Println("bind")
-	} else {
-		log.Println("error")
 	}
 }
